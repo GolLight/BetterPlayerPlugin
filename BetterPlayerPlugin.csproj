@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="MediaBrowser.Controller" Version="10.11.0" />
+    <PackageReference Include="MediaBrowser.Model" Version="10.11.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources/better_player.js" />
+  </ItemGroup>
+</Project>
