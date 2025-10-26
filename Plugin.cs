@@ -46,7 +46,7 @@ namespace Jellyfin.Plugin.BetterPlayer// 确保这个命名空间与您的项目
                 {
                     Name = Name,
                     // 确保这里的路径与您的 .csproj 中的 <EmbeddedResource> 路径匹配
-                    EmbeddedResourcePath = $"{GetType().Namespace}.Configuration.config.html" 
+                    EmbeddedResourcePath = $"{GetType().Namespace}.Configuration.configPage.html" 
                 }
             ];
         }
