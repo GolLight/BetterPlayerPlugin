@@ -1,4 +1,3 @@
-// ✨ 修正：使用文件范围命名空间 (现代 C# 语法)
 using MediaBrowser.Model.Plugins; // 核心依赖：BasePluginConfiguration 仍然在这里
 
 namespace Jellyfin.Plugin.BetterPlayer.Configuration;

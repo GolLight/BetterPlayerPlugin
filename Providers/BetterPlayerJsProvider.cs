@@ -32,19 +32,18 @@ namespace Jellyfin.Plugin.BetterPlayer.Api
             try
             {
                 var assembly = Assembly.GetExecutingAssembly();
-                // 资源的完整名称应该是: {默认命名空间}.Resources.better_player.js
                 const string resourceName = "Jellyfin.Plugin.BetterPlayer.Resources.better_player.js";
 
-                using var stream = assembly.GetManifestResourceStream(resourceName);
+                // 🌟 关键修改：移除 'using var'，改为普通的 'var'
+                var stream = assembly.GetManifestResourceStream(resourceName);
                 
                 if (stream == null)
                 {
                     _logger.LogError("[BP-ERROR] 未找到嵌入资源 {ResourceName}。", resourceName);
-                    return NotFound(); // 返回标准的 HTTP 404
+                    return NotFound();
                 }
                 
-                // 使用 FileStreamResult 或 FileContentResult 直接返回内容
-                // 我们使用 FileStreamResult 以避免将整个文件读入内存
+                // 框架在文件传输完成后，会负责关闭这个 Stream。
                 return File(stream, "application/javascript");
             }
             catch (Exception ex)
