@@ -1,24 +1,38 @@
-using System.IO;
-using System.Text;
-using MediaBrowser.Controller.Plugins;
+using System;
+using MediaBrowser.Model.Logging;
 
 namespace BetterPlayerPlugin
 {
-    public class WebHtmlTransformer : IFileTransformer
+    public class WebHtmlTransformer
     {
+        private readonly ILogger _logger;
+
+        public WebHtmlTransformer(ILogManager logManager)
+        {
+            _logger = logManager.CreateLogger(nameof(WebHtmlTransformer));
+        }
+
         public string TargetFile() => "/web/index.html";
 
-        public Stream Transform(Stream input)
+        // FT 插件要求的签名
+        public string Transform(string originalContent)
         {
-            using var reader = new StreamReader(input, Encoding.UTF8);
-            var html = reader.ReadToEnd();
-            var scriptTag = "<script src=\"/better_player.js\" defer></script>";
-            var idx = html.LastIndexOf("</body>", System.StringComparison.OrdinalIgnoreCase);
-            if (idx >= 0)
+            try
             {
-                html = html.Insert(idx, scriptTag);
+                var scriptTag = "<script src=\"/better_player.js\" defer></script>";
+                var idx = originalContent.LastIndexOf("</body>", StringComparison.OrdinalIgnoreCase);
+                if (idx >= 0)
+                {
+                    var result = originalContent.Insert(idx, scriptTag);
+                    return result;
+                }
+                return originalContent;
             }
-            return new MemoryStream(Encoding.UTF8.GetBytes(html));
+            catch (Exception ex)
+            {
+                _logger.Error($"WebHtmlTransformer.Transform 异常: {ex}");
+                return originalContent;
+            }
         }
     }
 }
