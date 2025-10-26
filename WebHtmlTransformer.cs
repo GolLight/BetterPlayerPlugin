@@ -1,15 +1,15 @@
 using System;
-using MediaBrowser.Model.Logging;
+using Microsoft.Extensions.Logging;
 
-namespace BetterPlayerPlugin
+namespace Jellyfin.Plugin.BetterPlayer// 确保这个命名空间与您的项目一致
 {
     public class WebHtmlTransformer
     {
-        private readonly ILogger _logger;
+        private readonly ILogger<WebHtmlTransformer> _logger;
 
-        public WebHtmlTransformer(ILogManager logManager)
+        public WebHtmlTransformer(ILogger<WebHtmlTransformer> logger)
         {
-            _logger = logManager.CreateLogger(nameof(WebHtmlTransformer));
+            _logger = logger;
         }
 
         public string TargetFile() => "/web/index.html";
@@ -30,7 +30,7 @@ namespace BetterPlayerPlugin
             }
             catch (Exception ex)
             {
-                _logger.Error($"WebHtmlTransformer.Transform 异常: {ex}");
+                _logger.LogError(ex, "WebHtmlTransformer.Transform 异常");
                 return originalContent;
             }
         }

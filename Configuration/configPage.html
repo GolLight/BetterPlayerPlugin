@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Better Player 插件配置</title>
+</head>
+<body>
+    <div id="BetterPlayerConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" 
+         data-require="emby-input,emby-button,emby-select,emby-checkbox">
+        <div data-role="content">
+            <div class="content-primary">
+                <form id="BetterPlayerConfigForm">
+                    <div class="selectContainer">
+                        <label class="selectLabel" for="Options">播放器增强选项</label>
+                        <select is="emby-select" id="Options" name="Options" class="emby-select-withcolor emby-select">
+                            <option value="Default">默认播放器行为</option>
+                            <option value="Enhanced">启用全部增强功能 (推荐)</option>
+                            <option value="TrickplayOnly">仅启用 Trickplay (预览)</option>
+                        </select>
+                        <div class="fieldDescription">选择插件对默认 Web 播放器的增强级别。</div>
+                    </div>
+
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input id="EnableCustomUI" name="EnableCustomUI" type="checkbox" is="emby-checkbox" />
+                            <span>启用自定义播放器界面</span>
+                        </label>
+                        <div class="fieldDescription">启用插件提供的自定义播放器按钮和UI元素。</div>
+                    </div>
+                    
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="MaxPreviewWidth">预览缩略图最大宽度 (像素)</label>
+                        <input id="MaxPreviewWidth" name="MaxPreviewWidth" type="number" is="emby-input" min="100" />
+                        <div class="fieldDescription">设置播放进度条上预览缩略图的最大宽度。默认 320。</div>
+                    </div>
+                    
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="CustomScriptUrl">自定义脚本 URL (可选)</label>
+                        <input id="CustomScriptUrl" name="CustomScriptUrl" type="url" is="emby-input" placeholder="例如：https://my.domain.com/custom.js" />
+                        <div class="fieldDescription">如果您想使用外部脚本，请在此处填写完整的 URL。留空则使用内置脚本。</div>
+                    </div>
+                    
+                    <div>
+                        <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                            <span>保存</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <script type="text/javascript">
+            var BetterPlayerConfig = {
+                // 您的插件的实际 GUID
+                pluginUniqueId: 'b5eaeb4a-57d9-4703-9e63-2c2ad6a7fc67' 
+            };
+
+            // 加载配置
+            document.querySelector('#BetterPlayerConfigPage')
+                .addEventListener('pageshow', function() {
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(BetterPlayerConfig.pluginUniqueId).then(function (config) {
+                        // ✨ 适配：加载四个新属性
+                        document.querySelector('#Options').value = config.Options;
+                        document.querySelector('#EnableCustomUI').checked = config.EnableCustomUI;
+                        document.querySelector('#MaxPreviewWidth').value = config.MaxPreviewWidth;
+                        document.querySelector('#CustomScriptUrl').value = config.CustomScriptUrl;
+                        
+                        Dashboard.hideLoadingMsg();
+                    });
+                });
+
+            // 保存配置
+            document.querySelector('#BetterPlayerConfigForm')
+                .addEventListener('submit', function(e) {
+                Dashboard.showLoadingMsg();
+                ApiClient.getPluginConfiguration(BetterPlayerConfig.pluginUniqueId).then(function (config) {
+                    // ✨ 适配：读取四个新属性
+                    config.Options = document.querySelector('#Options').value;
+                    config.EnableCustomUI = document.querySelector('#EnableCustomUI').checked;
+                    config.MaxPreviewWidth = document.querySelector('#MaxPreviewWidth').value;
+                    config.CustomScriptUrl = document.querySelector('#CustomScriptUrl').value;
+                    
+                    ApiClient.updatePluginConfiguration(BetterPlayerConfig.pluginUniqueId, config).then(function (result) {
+                        Dashboard.processPluginConfigurationUpdateResult(result);
+                    });
+                });
+
+                e.preventDefault();
+                return false;
+            });
+        </script>
+    </div>
+</body>
+</html>
