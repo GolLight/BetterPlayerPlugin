@@ -1,27 +1,33 @@
-// 相对路径: /Plugin.cs
-using MediaBrowser.Common.Configuration;
-using MediaBrowser.Common.Plugins;
-using MediaBrowser.Controller.Configuration;
-using MediaBrowser.Model.Plugins;
-using MediaBrowser.Model.Serialization;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using Jellyfin.Plugin.BetterPlayer.Configuration;
+// <copyright file="Plugin.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
 
 namespace Jellyfin.Plugin.BetterPlayer
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Reflection;
+    using Jellyfin.Plugin.BetterPlayer.Configuration;
+    using MediaBrowser.Common.Configuration;
+    using MediaBrowser.Common.Plugins;
+    using MediaBrowser.Controller.Configuration;
+    using MediaBrowser.Model.Plugins;
+    using MediaBrowser.Model.Serialization;
+    using Microsoft.Extensions.Logging;
+
     public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     {
         public override string Name => "Better Web Player Extension";
+
         public override Guid Id => Guid.Parse("b5eaeb4a-57d9-4703-9e63-2c2ad6a7fc67");
+
         public override string Description => "Enhances the Jellyfin web player interface.";
-        
+
         public static Plugin Instance { get; private set; } = null!;
-        
+
         internal IServerConfigurationManager ConfigurationManager { get; set; }
+
         public ILogger<Plugin> Logger { get; set; }
 
         // ✨ 修复 CS0122 根源: BasePlugin.ApplicationPaths 是 protected。
@@ -40,26 +46,27 @@ namespace Jellyfin.Plugin.BetterPlayer
             : base(applicationPaths, xmlSerializer)
         {
             Instance = this;
-            
-            ConfigurationManager = configurationManager;
-            Logger = logger;
+
+            this.ConfigurationManager = configurationManager;
+            this.Logger = logger;
+
             // ✨ 将注入的路径对象赋值给我们创建的 internal 属性
-            PublicApplicationPaths = applicationPaths; 
+            this.PublicApplicationPaths = applicationPaths;
         }
 
         public IEnumerable<PluginPageInfo> GetPages()
         {
             yield return new PluginPageInfo
             {
-                Name = Name,
-                EmbeddedResourcePath = GetType().Namespace + ".Configuration.configPage.html"
+                Name = this.Name,
+                EmbeddedResourcePath = this.GetType().Namespace + ".Configuration.configPage.html",
             };
         }
-        
+
         // UnregisterFileTransformationProviders 保持不变
         private void UnregisterFileTransformationProviders()
         {
-            Logger.LogInformation("[BP-INFO] Attempting to unregister BetterPlayer transformation.");
+            this.Logger.LogInformation("[BP-INFO] Attempting to unregister BetterPlayer transformation.");
             try
             {
                 var ftType = AppDomain.CurrentDomain.GetAssemblies()
@@ -68,7 +75,7 @@ namespace Jellyfin.Plugin.BetterPlayer
 
                 if (ftType == null)
                 {
-                    Logger.LogWarning("[BP-WARN] FileTransformation plugin not found, skipping unregister.");
+                    this.Logger.LogWarning("[BP-WARN] FileTransformation plugin not found, skipping unregister.");
                     return;
                 }
 
@@ -76,18 +83,18 @@ namespace Jellyfin.Plugin.BetterPlayer
 
                 if (unregisterMethod == null)
                 {
-                    Logger.LogError("[BP-ERROR] FileTransformation plugin lacks UnregisterTransformation method.");
+                    this.Logger.LogError("[BP-ERROR] FileTransformation plugin lacks UnregisterTransformation method.");
                     return;
                 }
 
-                const string PluginGuid = "b5eaeb4a-57d9-4703-9e63-2c2ad6a7fc67"; 
+                const string PluginGuid = "b5eaeb4a-57d9-4703-9e63-2c2ad6a7fc67";
                 unregisterMethod.Invoke(null, new object[] { PluginGuid });
 
-                Logger.LogInformation("[BP-INFO] BetterPlayer transformation successfully unregistered [BP-UNREG-OK].");
+                this.Logger.LogInformation("[BP-INFO] BetterPlayer transformation successfully unregistered [BP-UNREG-OK].");
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, "[BP-ERROR] Reflection unregister failed.");
+                this.Logger.LogError(ex, "[BP-ERROR] Reflection unregister failed.");
             }
         }
     }
