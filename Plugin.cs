@@ -1,54 +1,100 @@
-using MediaBrowser.Model.Plugins; // IHasWebPages, PluginPageInfo 接口所在
-using MediaBrowser.Model.Serialization; // IXmlSerializer 接口所在
-using MediaBrowser.Common.Configuration; // IApplicationPaths 接口所在
-using MediaBrowser.Common.Plugins; // BasePlugin 所在
+// 相对路径: /Plugin.cs
+using MediaBrowser.Common.Configuration;
+using MediaBrowser.Common.Plugins;
+using MediaBrowser.Controller.Configuration;
+using MediaBrowser.Model.Plugins;
+using MediaBrowser.Model.Serialization;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using Jellyfin.Plugin.BetterPlayer.Configuration;
 
-namespace Jellyfin.Plugin.BetterPlayer// 确保这个命名空间与您的项目一致
+namespace Jellyfin.Plugin.BetterPlayer
 {
-    /// <summary>
-    /// Better Player 插件的主类。
-    /// </summary>
+    // 您的插件主类
     public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     {
-        // 确保您的配置类命名空间被正确引用
+        public override string Name => "Better Web Player Extension";
+        public override Guid Id => Guid.Parse("b5eaeb4a-57d9-4703-9e63-2c2ad6a7fc67");
+        public override string Description => "Enhances the Jellyfin web player interface.";
         
-        /// <summary>
-        /// Gets the current plugin instance.
-        /// </summary>
-        public static Plugin? Instance { get; private set; }
+        public static Plugin Instance { get; private set; } = null!;
+        
+        // 供其他服务访问的内部属性
+        internal IServerConfigurationManager ConfigurationManager { get; set; }
+        internal IApplicationPaths ApplicationPaths { get; set; }
+        public ILogger<Plugin> Logger { get; set; } // 设为 public 方便 StartupService 访问
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Plugin"/> class.
-        /// </summary>
-        // 注意：这里需要确保 IApplicationPaths 和 IXmlSerializer 在 .csproj 中被正确引用（MediaBrowser.Common/Model）
-        public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer)
+        public Plugin(
+            IApplicationPaths applicationPaths,
+            IXmlSerializer xmlSerializer,
+            ILogger<Plugin> logger,
+            IServerConfigurationManager configurationManager)
             : base(applicationPaths, xmlSerializer)
         {
             Instance = this;
+            
+            ConfigurationManager = configurationManager;
+            ApplicationPaths = applicationPaths;
+            Logger = logger;
         }
-        
-        /// <inheritdoc />
-        public override string Name => "Better Web Player Extension";
 
-        /// <inheritdoc />
-        public override Guid Id => Guid.Parse("b5eaeb4a-57d9-4703-9e63-2c2ad6a7fc67"); // 您的插件 GUID
-
-        /// <inheritdoc />
         public IEnumerable<PluginPageInfo> GetPages()
         {
-            // 简化 EmbeddedResourcePath 的引用方式
-            return
-            [
-                new PluginPageInfo
+            yield return new PluginPageInfo
+            {
+                Name = Name,
+                EmbeddedResourcePath = GetType().Namespace + ".Configuration.configPage.html"
+            };
+        }
+        
+        // ✨ 重写 Dispose 方法，进行反注册清理
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+
+            if (disposing)
+            {
+                UnregisterFileTransformationProviders();
+            }
+        }
+
+        private void UnregisterFileTransformationProviders()
+        {
+            Logger.LogInformation("[BP-INFO] Attempting to unregister BetterPlayer transformation.");
+            try
+            {
+                var ftType = AppDomain.CurrentDomain.GetAssemblies()
+                    .SelectMany(a => a.GetTypes())
+                    .FirstOrDefault(t => t.FullName == "Jellyfin.Plugin.FileTransformation.PluginInterface");
+
+                if (ftType == null)
                 {
-                    Name = Name,
-                    // 确保这里的路径与您的 .csproj 中的 <EmbeddedResource> 路径匹配
-                    EmbeddedResourcePath = $"{GetType().Namespace}.Configuration.configPage.html" 
+                    Logger.LogWarning("[BP-WARN] FileTransformation plugin not found, skipping unregister.");
+                    return;
                 }
-            ];
+
+                // 查找反注册方法 (假设参数是 transformation ID)
+                var unregisterMethod = ftType.GetMethod("UnregisterTransformation");
+
+                if (unregisterMethod == null)
+                {
+                    Logger.LogError("[BP-ERROR] FileTransformation plugin lacks UnregisterTransformation method.");
+                    return;
+                }
+
+                // 传递您的插件 GUID 作为 ID 来反注册
+                const string PluginGuid = "b5eaeb4a-57d9-4703-9e63-2c2ad6a7fc67"; 
+                unregisterMethod.Invoke(null, new object[] { PluginGuid });
+
+                Logger.LogInformation("[BP-INFO] BetterPlayer transformation successfully unregistered [BP-UNREG-OK].");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "[BP-ERROR] Reflection unregister failed.");
+            }
         }
     }
 }
