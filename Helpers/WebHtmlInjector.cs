@@ -18,7 +18,7 @@ namespace Jellyfin.Plugin.BetterPlayer.Helpers
     {
         private static ILogger<Plugin> Logger => Plugin.Instance!.Logger;
         private const string ScriptTagRegex = "<script plugin=\"BetterPlayerPlugin\".*?></script>";
-        private const string ClientScriptRoute = BetterPlayerJsProvider.Route; 
+        private const string ClientScriptRoute = "/BetterPlayerPlugin/better_player.js"; 
 
         public static string FileTransformer(PatchRequestPayload payload)
         {
@@ -37,7 +37,8 @@ namespace Jellyfin.Plugin.BetterPlayer.Helpers
         {
             Logger.LogDebug("[BP-DEBUG] Attempting to inject script by changing index.html file directly.");
 
-            var applicationPaths = Plugin.Instance!.ApplicationPaths;
+            // ✨ 修复 CS0122：改为使用 Plugin.cs 中新公开的 PublicApplicationPaths 属性
+            var applicationPaths = Plugin.Instance!.PublicApplicationPaths; 
 
             if (string.IsNullOrWhiteSpace(applicationPaths.WebPath)) return;
 

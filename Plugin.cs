@@ -13,7 +13,6 @@ using Jellyfin.Plugin.BetterPlayer.Configuration;
 
 namespace Jellyfin.Plugin.BetterPlayer
 {
-    // 您的插件主类
     public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     {
         public override string Name => "Better Web Player Extension";
@@ -22,10 +21,16 @@ namespace Jellyfin.Plugin.BetterPlayer
         
         public static Plugin Instance { get; private set; } = null!;
         
-        // 供其他服务访问的内部属性
         internal IServerConfigurationManager ConfigurationManager { get; set; }
-        internal IApplicationPaths ApplicationPaths { get; set; }
-        public ILogger<Plugin> Logger { get; set; } // 设为 public 方便 StartupService 访问
+        public ILogger<Plugin> Logger { get; set; }
+
+        // ✨ 修复 CS0122 根源: BasePlugin.ApplicationPaths 是 protected。
+        //    我们通过构造函数注入并存储在一个 public/internal 属性中，
+        //    或者直接在 Plugin.cs 中创建一个新属性来暴露它。
+        //    最简单且兼容的方式是：在构造函数中保存注入的 IApplicationPaths。
+        //    我们将其命名为 **PublicApplicationPaths** 以避免与基类 protected 属性冲突，
+        //    并设置为 internal。
+        internal IApplicationPaths PublicApplicationPaths { get; } // 新增属性
 
         public Plugin(
             IApplicationPaths applicationPaths,
@@ -37,8 +42,9 @@ namespace Jellyfin.Plugin.BetterPlayer
             Instance = this;
             
             ConfigurationManager = configurationManager;
-            ApplicationPaths = applicationPaths;
             Logger = logger;
+            // ✨ 将注入的路径对象赋值给我们创建的 internal 属性
+            PublicApplicationPaths = applicationPaths; 
         }
 
         public IEnumerable<PluginPageInfo> GetPages()
@@ -50,17 +56,7 @@ namespace Jellyfin.Plugin.BetterPlayer
             };
         }
         
-        // ✨ 重写 Dispose 方法，进行反注册清理
-        protected override void Dispose(bool disposing)
-        {
-            base.Dispose(disposing);
-
-            if (disposing)
-            {
-                UnregisterFileTransformationProviders();
-            }
-        }
-
+        // UnregisterFileTransformationProviders 保持不变
         private void UnregisterFileTransformationProviders()
         {
             Logger.LogInformation("[BP-INFO] Attempting to unregister BetterPlayer transformation.");
@@ -76,7 +72,6 @@ namespace Jellyfin.Plugin.BetterPlayer
                     return;
                 }
 
-                // 查找反注册方法 (假设参数是 transformation ID)
                 var unregisterMethod = ftType.GetMethod("UnregisterTransformation");
 
                 if (unregisterMethod == null)
@@ -85,7 +80,6 @@ namespace Jellyfin.Plugin.BetterPlayer
                     return;
                 }
 
-                // 传递您的插件 GUID 作为 ID 来反注册
                 const string PluginGuid = "b5eaeb4a-57d9-4703-9e63-2c2ad6a7fc67"; 
                 unregisterMethod.Invoke(null, new object[] { PluginGuid });
 
