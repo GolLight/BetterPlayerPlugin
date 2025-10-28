@@ -68,11 +68,11 @@ jobs:
 
       # 3. 更新 .csproj 版本
       - name: 🆙 更新 .csproj 版本号
-        run: |
-          sudo apt-get update && sudo apt-get install -y xmlstarlet
-          VERSION_XPATH="/Project/PropertyGroup/Version"
-          xmlstarlet ed -P -L -u "$VERSION_XPATH" -v "${{ env.PLUGIN_VERSION }}" "${{ env.CS_PROJ_PATH }}"
-          echo "✅ .csproj 中的 <Version> 已更新为 ${{ env.PLUGIN_VERSION }}"
+        uses: rvolo/xml-replace-action@v0.3
+        with:
+          filepath: "${{ env.CS_PROJ_PATH }}"
+          xpath: "/Project/PropertyGroup/Version/text()"
+          replace: "${{ env.PLUGIN_VERSION }}"
 
       # 4. 构建项目
       - name: 🏗️ 构建插件 (dotnet build)
