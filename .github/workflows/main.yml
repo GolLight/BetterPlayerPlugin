@@ -33,31 +33,32 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      # 2. 提取版本号和 Changelog
+      # 2. 提取版本号和 Changelog (已修正版本赋值)
       - name: 🔖 提取版本信息及 Changelog
-        id: get_version_info
         run: |
           # a. 提取当前版本 (V1.0.0.1 -> 1.0.0.1)
-          CURRENT_VERSION="${{ github.ref_name#v }}"
+          VERSION_TAG_NAME="${{ github.ref_name }}"
+          # 正确地移除 'v' 前缀并赋值给 CURRENT_VERSION
+          CURRENT_VERSION="${VERSION_TAG_NAME#v}" 
+          
+          # 将最终版本号设置到 PLUGIN_VERSION 环境变量
           echo "PLUGIN_VERSION=$CURRENT_VERSION" >> $GITHUB_ENV
+          echo "Current Version: $CURRENT_VERSION"
 
           # b. 获取上一个 Tag
-          # git describe --tags --abbrev=0 获取最近的 Tag
-          # --skip=1 则跳过当前的 Tag，获取上一个 Tag
           PREVIOUS_TAG=$(git describe --tags --abbrev=0 --skip=1 2>/dev/null)
           
           # c. 提取 Changelog
           if [ -z "$PREVIOUS_TAG" ]; then
-            # 如果没有上一个 Tag，则获取所有 commits (例如第一次发布)
             CHANGELOG=$(git log --pretty=format:"* %s" | sed ':a;N;$!ba;s/\n/\\n/g')
             echo "未找到上一个 Tag，使用所有 Commit 消息作为 Changelog。"
           else
             # 从上一个 Tag 到当前 Tag 之间的 commits
-            CHANGELOG=$(git log "$PREVIOUS_TAG"..HEAD --pretty=format:"* %s" | sed ':a;N;$!ba;s/\n/\\n/g')
+            CHANGELOG=$(git log "$PREVIOUS_TAG"..${{ github.sha }} --pretty=format:"* %s" | sed ':a;N;$!ba;s/\n/\\n/g')
             echo "Changelog 已从 $PREVIOUS_TAG 提取。"
           fi
           
-          # 将 CHANGELOG 结果存入环境变量 (需要将换行符转义)
+          # 将 CHANGELOG 结果存入环境变量
           echo "CHANGELOG<<EOF" >> $GITHUB_ENV
           echo "$CHANGELOG" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
@@ -74,8 +75,8 @@ jobs:
       - name: 🏗️ 构建插件 (dotnet build)
         run: dotnet build "${{ env.CS_PROJ_PATH }}" -c Release
 
-      # 5. 打包 ZIP 文件
-      - name: 📦 打包插件 ZIP
+      # 5. 打包 ZIP 文件 (仅打包 DLL)
+      - name: 📦 打包插件 ZIP (仅 DLL)
         run: |
           # 切换到构建输出目录
           BUILD_PATH="Jellyfin.Plugin.BetterPlayer/BetterPlayerPlugin/bin/Release/net9.0"
@@ -85,7 +86,6 @@ jobs:
           ZIP_OUTPUT="${{ github.workspace }}/${{ env.ZIP_NAME }}"
 
           # 使用 zip 命令，只打包核心 DLL 文件
-          # 注意：zip 的参数是相对路径，所以这里直接使用 DLL 文件名
           zip "$ZIP_OUTPUT" ${{ env.PLUGIN_DLL }}
 
           # 返回仓库根目录
@@ -106,9 +106,12 @@ jobs:
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           
           # c. 构建新的版本对象 (JSON 字符串)
+          # 注意：此处需要对 CHANGELOG 进行转义处理，以便其作为 JSON 字符串的一部分
+          CHANGELOG_ESCAPED=$(echo -e "${{ env.CHANGELOG }}" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
+
           NEW_VERSION_JSON="{
             \"version\": \"${{ env.PLUGIN_VERSION }}\",
-            \"changelog\": \"${{ env.CHANGELOG }}\",
+            \"changelog\": \"$CHANGELOG_ESCAPED\",
             \"targetAbi\": \"10.11.0.0\",
             \"sourceUrl\": \"https://github.com/GolLight/BetterPlayerPlugin/releases/download/v${{ env.PLUGIN_VERSION }}/${{ env.ZIP_NAME }}\",
             \"checksum\": \"$MD5_UPPER\",
@@ -116,7 +119,6 @@ jobs:
           }"
 
           # d. 使用 jq 将新对象添加到 versions 数组的开头 (prepend)
-          # 注意: 我们假设第一个插件 (.[0]) 是目标插件
           jq --argjson new_version "$NEW_VERSION_JSON" \
              '.[0].versions |= [ $new_version ] + .' ${{ env.MANIFEST_PATH }} > manifest_updated.json
              
@@ -130,8 +132,9 @@ jobs:
           git add ${{ env.MANIFEST_PATH }}
           git add ${{ env.CS_PROJ_PATH }}
           git diff
-          git commit -m "chore(release): Update manifest and csproj for v${{ env.PLUGIN_VERSION }} release." || echo "No changes to commit."
-          git push
+          # 检查是否有实际改动，没有则不执行 commit
+          git diff --quiet --exit-code || git commit -m "chore(release): Update manifest and csproj for v${{ env.PLUGIN_VERSION }} release."
+          # git push
 
       # 8. 创建 GitHub Release
       - name: 🏷️ 创建 GitHub Release 并上传资产
