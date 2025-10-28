@@ -1,10 +1,15 @@
-# Better Web Player Extension (BetterPlayerPlugin)
+# Better Web Player Extension (Better Player)
 
-## 🎥 项目概述：Web 播放增强封装包
+## 🎥 项目概述：Web 播放增强脚本注入框架
 
-**Better Web Player Extension** 是一个轻量级的 Jellyfin 插件。本插件的唯一目的和核心价值在于：**将桂鸢原作者开发的优秀前端脚本 `better_player.js` 包装成一个标准的 Jellyfin 插件，方便用户通过存储库和插件管理系统进行安装和更新。**
+**Better Web Player Extension** 的核心价值在于提供一个**灵活、通用的 JavaScript 脚本注入框架**，专门为 Jellyfin Web 客户端设计。
 
-本插件通过 C# 后端逻辑，利用 **File Transformation (FT) 插件** 机制，将脚本安全、稳定地注入到 Jellyfin Web 播放页面。
+### 核心目的与价值
+
+* **当前版本功能 (v1.x):** 插件默认内置并注入了桂鸢原作者开发的优秀前端脚本 `better_player.js`，为用户提供即时的播放器增强体验。
+* **未来目标 (v2.x+):** **实现自定义脚本注入功能。** 本插件将允许用户通过设置界面，指定任何外部 JavaScript 脚本的 URL，并将其安全、稳定地注入到 Jellyfin Web 播放页面中，以实现高度个性化的播放器增强。
+
+本插件通过 C# 后端逻辑，利用 **File Transformation Plugin (FT 插件)** 机制，实现脚本的安全、稳定注入。
 
 ### 🤖 开发者说明
 
@@ -18,15 +23,23 @@
 
 | 属性 | 内容 | 链接 |
 | :--- | :--- | :--- |
-| **原作者** | **桂鸢 (guiyuanyuanbao)** | N/A |
+| **原作者** | **桂鸢 (guiyuanyuanbao)** | [https://github.com/guiyuanyuanbao/](https://github.com/guiyuanyuanbao/) |
 | **原项目仓库** | betterJellyfinWebPlayer-extension | [https://github.com/guiyuanyuanbao/Jellyfin-betterJellyfinWebPlayer-extension](https://github.com/guiyuanyuanbao/Jellyfin-betterJellyfinWebPlayer-extension) |
 | **核心脚本文件** | `better_player.js` | [https://github.com/guiyuanyuanbao/Jellyfin-betterJellyfinWebPlayer-extension/blob/main/batter_player.js](https://github.com/guiyuanyuanbao/Jellyfin-betterJellyfinWebPlayer-extension/blob/main/batter_player.js) |
 
 **致谢：** 我们在此衷心感谢原作者 `桂鸢` 提供的优秀前端脚本。
 
+### 👏 插件模板与架构参考致谢
+
+本插件的 **项目结构、C# 架构和 File Transformation (FT) 注入机制** 大量参考了以下项目，在此表示诚挚感谢：
+
+* **项目名称:** InPlayerEpisodePreview
+* **仓库:** [https://github.com/Namo2/InPlayerEpisodePreview](https://github.com/Namo2/InPlayerEpisodePreview)
+* **作者:** Namo2
+
 ---
 
-## ✨ 插件特性 (功能由 `better_player.js` 提供)
+## ✨ 插件特性 (功能由默认注入的 `better_player.js` 提供)
 
 * 增强的键盘和触控交互。
 * 鼠标悬停时的 Trickplay 预览缩略图。
@@ -48,34 +61,49 @@
 
 > **存储库 URL (GitHub Raw Link)：**
 >
-> `https://raw.githubusercontent.com/[您的GitHub用户名]/[您的仓库名]/main/repository.json`
->
-> *请确保用您的实际 GitHub 用户名和仓库名替换占位符。*
+> **`https://raw.githubusercontent.com/GolLight/BetterPlayerPlugin/master/manifest.json`**
 
 ### 2. 完成安装
 
 1.  导航到 **目录 (Catalog)** 选项卡。
-2.  找到并安装 **"Better Web Player Extension"**。
+2.  找到并安装 **"Better Player"** (或 **"Better Web Player Extension"**，取决于您的 `manifest.json` 配置)。
 3.  安装后，**重启 Jellyfin 服务器** 以使插件生效。
 
 ---
 
-## 🛠️ 技术详情 (For Developers & Debugging)
+## ⚙️ 核心原理流程图
 
-| 属性 | 内容 | 备注 |
-| :--- | :--- | :--- |
-| **插件名称空间** | `BetterPlayerPlugin` | C# 内部命名空间 |
-| **插件 GUID** | `b5eaeb4a-57d9-4703-9e63-2c2ad6a7fc67` | 唯一标识符 |
-| **目标框架** | `.NET 9.0` | 编译环境 |
-| **Jellyfin 依赖** | `10.11.0` | 目标 API 版本 |
-| **核心机制** | C# **反射** | 用于安全注册到 FT 插件 |
+该图展示了插件在 Jellyfin 启动时如何注册注入点，以及浏览器如何加载脚本的机制：
+```mermaid
+graph TD
+    subgraph 启动与注册 (Jellyfin Server Boot)
+        A[StartupService 启动] --> B{FT 插件已安装?};
+        
+        B -- 是 --> C[反射调用: FT 插件注册 WebHtmlInjector.FileTransformer];
+        B -- 否 (降级) --> D[WebHtmlInjector.Direct()：直接修改 index.html];
+        
+        C --> E(注入点：通过 FT 拦截机制建立);
+        D --> E;
+    end
+    
+    subgraph 脚本分发与加载 (Browser Access)
+        F[用户在浏览器访问 Web 播放器] --> G(浏览器请求 index.html);
+        
+        G --> H{服务器响应: HTML 文件被注入};
+        
+        H --> I[HTML 包含脚本标签: <script src='/BetterPlayerPlugin/better_player.js'>];
+        
+        I --> J[浏览器请求: GET /BetterPlayerPlugin/better_player.js];
+        
+        J --> K[BetterPlayerJsController (API) 拦截请求];
+        
+        K --> L[从插件 DLL (Resources) 加载 better_player.js];
+        
+        L --> M(🚀 脚本执行：播放器增强完成);
+    end
+    
+    A --> F;
 
-**核心文件:**
-* `Plugin.cs`
-* `Startup.cs`
-* `BetterPlayerJsProvider.cs`
-* `WebHtmlTransformer.cs`
-* `Resources/better_player.js`
-* `plugin.json` (发布元数据)
-
-您可以使用 `dotnet publish` 命令在 Linux 环境下编译项目。
+    style B fill:#FEEFB3,stroke:#CC9900;
+    style E fill:#DDEEFF,stroke:#3C88A8,stroke-width:2px;
+    style M fill:#E8F7DD,stroke:#6AA84F,font-weight:bold;

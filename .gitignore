@@ -1,0 +1,43 @@
+#----------------------------------------------------------------------
+# .NET Core/Visual Studio
+#----------------------------------------------------------------------
+[Bb]in/
+[Oo]bj/
+*.log
+*.vspscc
+*.vssscc
+*.suo
+*.user
+.vs/
+.vscode/
+
+# Project files
+*.csproj.user
+*.vcxproj.user
+
+# NuGet
+*.nupkg
+.nuget/
+**/[Rr]elease/
+**/[Dd]ebug/
+
+#----------------------------------------------------------------------
+# Jellyfin Plugin Specific
+#----------------------------------------------------------------------
+# Jellyfin's plugin directory (for local testing builds)
+**/plugins/
+**/cache/
+
+# Node modules (for web client code)
+node_modules/
+npm-debug.log
+package-lock.json 
+
+# Build output artifacts from GitHub Actions
+*.zip
+
+#----------------------------------------------------------------------
+# IDE/OS generated files
+#----------------------------------------------------------------------
+Thumbs.db
+.DS_Store
