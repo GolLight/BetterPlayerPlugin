@@ -13,8 +13,8 @@
         "changelog": "Initial release: Implemented the basic injection framework and included better_player.js as the default script.",
         "targetAbi": "10.11.0.0",
         "sourceUrl": "https://github.com/GolLight/BetterPlayerPlugin/releases/download/v1.0.0.0/BetterPlayerPlugin.zip",
-        "checksum": "",
-        "timestamp": "2025-10-28T00:00:00Z"
+        "checksum": "C851227EBAA12EAB62DAAD576BE01596",
+        "timestamp": "2025-10-28T21:28:00Z"
       }
     ]
   }
