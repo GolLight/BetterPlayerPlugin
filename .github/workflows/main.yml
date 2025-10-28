@@ -38,7 +38,7 @@ jobs:
         run: |
           # a. 提取当前版本 (V1.0.0.1 -> 1.0.0.1)
           VERSION_TAG_NAME="${{ github.ref_name }}"
-          VERSION_TAG_NAME="1.0.0.1"
+          # 正确地移除 'v' 前缀并赋值给 CURRENT_VERSION
           CURRENT_VERSION="${VERSION_TAG_NAME#v}" 
           
           echo "PLUGIN_VERSION=$CURRENT_VERSION" >> $GITHUB_ENV
@@ -81,6 +81,7 @@ jobs:
       # 5. 打包 ZIP 文件 (仅打包 DLL)
       - name: 📦 打包插件 ZIP (仅 DLL)
         run: |
+          pwd
           # 切换到构建输出目录
           BUILD_PATH="Jellyfin.Plugin.BetterPlayer/BetterPlayerPlugin/bin/Release/net9.0"
           cd "$BUILD_PATH"
@@ -93,6 +94,7 @@ jobs:
 
           # 返回仓库根目录
           cd - > /dev/null
+          pwd
           
           echo "ZIP 文件已创建: ${{ env.ZIP_NAME }}"
 
