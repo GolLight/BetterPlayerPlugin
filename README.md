@@ -76,33 +76,33 @@
 该图展示了插件在 Jellyfin 启动时如何注册注入点，以及浏览器如何加载脚本的机制：
 ```mermaid
 graph TD
-    subgraph 启动与注册 (Jellyfin Server Boot)
-        A[StartupService 启动] --> B{FT 插件已安装?};
+    subgraph S1 [Plugin Startup]
+        A[StartupService Init] --> B{FT Plugin Installed?};
         
-        B -- 是 --> C[反射调用: FT 插件注册 WebHtmlInjector.FileTransformer];
-        B -- 否 (降级) --> D[WebHtmlInjector.Direct()：直接修改 index.html];
+        B -- Yes --> C[Reflection Call: Register FileTransformer to FT];
+        B -- No (Fallback) --> D[Direct Mode: Modify index.html];
         
-        C --> E(注入点：通过 FT 拦截机制建立);
+        C --> E(Injection Point Established);
         D --> E;
     end
     
-    subgraph 脚本分发与加载 (Browser Access)
-        F[用户在浏览器访问 Web 播放器] --> G(浏览器请求 index.html);
+    subgraph S2 [Script Loading]
+        F[User Accesses Web Player] --> G(Browser Requests index.html);
         
-        G --> H{服务器响应: HTML 文件被注入};
+        G --> H{Server Response: Injected HTML};
         
-        H --> I[HTML 包含脚本标签: <script src='/BetterPlayerPlugin/better_player.js'>];
+        H --> I[HTML contains script tag: <br/>&lt;script src='/BetterPlayerPlugin/better_player.js'&gt;];
         
-        I --> J[浏览器请求: GET /BetterPlayerPlugin/better_player.js];
+        I --> J[Browser Requests /better_player.js];
         
-        J --> K[BetterPlayerJsController (API) 拦截请求];
+        J --> K[JsController API Intercepts];
         
-        K --> L[从插件 DLL (Resources) 加载 better_player.js];
+        K --> L[Load Script from Plugin DLL Resources];
         
-        L --> M(🚀 脚本执行：播放器增强完成);
+        L --> M(🚀 Script Executes: Player Enhanced);
     end
     
-    A --> F;
+    E --> F;
 
     style B fill:#FEEFB3,stroke:#CC9900;
     style E fill:#DDEEFF,stroke:#3C88A8,stroke-width:2px;
