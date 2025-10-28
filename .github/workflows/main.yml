@@ -38,23 +38,26 @@ jobs:
         run: |
           # a. 提取当前版本 (V1.0.0.1 -> 1.0.0.1)
           VERSION_TAG_NAME="${{ github.ref_name }}"
-          # 正确地移除 'v' 前缀并赋值给 CURRENT_VERSION
+          VERSION_TAG_NAME="1.0.0.1"
           CURRENT_VERSION="${VERSION_TAG_NAME#v}" 
           
-          # 将最终版本号设置到 PLUGIN_VERSION 环境变量
           echo "PLUGIN_VERSION=$CURRENT_VERSION" >> $GITHUB_ENV
           echo "Current Version: $CURRENT_VERSION"
-
+          
           # b. 获取上一个 Tag
-          PREVIOUS_TAG=$(git describe --tags --abbrev=0 --skip=1 2>/dev/null)
+          # 关键修正：按日期排序并使用 grep -v 排除当前正在处理的 Tag 名称，然后取第一个
+          PREVIOUS_TAG=$(git for-each-ref --sort='-*creatordate' --format '%(refname:short)' refs/tags | grep -v "$VERSION_TAG_NAME" | sed -n 1p) || true
+          
+          echo "Previous Tag Found: $PREVIOUS_TAG"
           
           # c. 提取 Changelog
           if [ -z "$PREVIOUS_TAG" ]; then
+            # 如果没有上一个 Tag (第一次发布)
             CHANGELOG=$(git log --pretty=format:"* %s" | sed ':a;N;$!ba;s/\n/\\n/g')
             echo "未找到上一个 Tag，使用所有 Commit 消息作为 Changelog。"
           else
-            # 从上一个 Tag 到当前 Tag 之间的 commits
-            CHANGELOG=$(git log "$PREVIOUS_TAG"..${{ github.sha }} --pretty=format:"* %s" | sed ':a;N;$!ba;s/\n/\\n/g')
+            # 从上一个 Tag 到当前 Commit 之间的 commits
+            CHANGELOG=$(git log "$PREVIOUS_TAG"..HEAD --pretty=format:"* %s" | sed ':a;N;$!ba;s/\n/\\n/g')
             echo "Changelog 已从 $PREVIOUS_TAG 提取。"
           fi
           
