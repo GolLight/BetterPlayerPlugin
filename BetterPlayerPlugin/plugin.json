@@ -1,8 +1,0 @@
-{
-  "guid": "b5eaeb4a-57d9-4703-9e63-2c2ad6a7fc67",
-  "name": "BetterPlayerPlugin",
-  "targetAbi": "10.11.0.0",
-  "version": "1.0.0.0",
-  "overview": "为 Jellyfin Web 客户端注入更强大的播放器控制和 Trickplay 预览体验。",
-  "description": "BetterPlayerPlugin 插件为 Jellyfin Web 客户端带来沉浸式播放控制体验，包括 Trickplay 预览缩略图、键盘与触控增强（如快进、倍速、滑动进度、双击播放/暂停等），并自动注入自定义 JS 脚本。依赖 jellyfin-plugin-file-transformation 插件，支持 Ubuntu 24 LXC 环境和 Jellyfin 10.11.0。"
-}

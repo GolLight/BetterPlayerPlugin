@@ -18,11 +18,11 @@ namespace Jellyfin.Plugin.BetterPlayer
 
     public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     {
-        public override string Name => "Better Web Player Extension";
+        public override string Name => "Better Player";
 
         public override Guid Id => Guid.Parse("b5eaeb4a-57d9-4703-9e63-2c2ad6a7fc67");
 
-        public override string Description => "Enhances the Jellyfin web player interface.";
+        public override string Description => "The Better Player (Better Web Player Extension) is a Jellyfin plugin based on a generic script injection framework. By injecting the better_player.js script, it aims to deliver an immersive, Bilibili-like experience, comprehensively enhancing keyboard, mouse, and mobile touch controls for highly efficient and intuitive web playback operation.";
 
         public static Plugin Instance { get; private set; } = null!;
 
