@@ -137,10 +137,11 @@ jobs:
           git config user.email github-actions@github.com
           git add ${{ env.MANIFEST_PATH }}
           git add ${{ env.CS_PROJ_PATH }}
-          git diff
+          cat ${{ env.MANIFEST_PATH }}
+          cat ${{ env.CS_PROJ_PATH }}
           # 检查是否有实际改动，没有则不执行 commit
           git diff --quiet --exit-code || git commit -m "chore(release): Update manifest and csproj for v${{ env.PLUGIN_VERSION }} release."
-          # git push
+          git push
 
       # 8. 创建 GitHub Release
       - name: 🏷️ 创建 GitHub Release 并上传资产
