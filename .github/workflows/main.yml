@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 env:
-  CS_PROJ_PATH: Jellyfin.Plugin.BetterPlayer/BetterPlayerPlugin/BetterPlayerPlugin.csproj
+  CS_PROJ_PATH: BetterPlayerPlugin/BetterPlayerPlugin.csproj
   MANIFEST_PATH: manifest.json
   PLUGIN_DLL: BetterPlayerPlugin.dll
   ZIP_NAME: BetterPlayerPlugin.zip
@@ -65,6 +65,7 @@ jobs:
           echo "CHANGELOG<<EOF" >> $GITHUB_ENV
           echo "$CHANGELOG" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
+          pwd
 
       # 3. 更新 .csproj 版本
       - name: 🆙 更新 .csproj 版本号
@@ -83,7 +84,7 @@ jobs:
         run: |
           pwd
           # 切换到构建输出目录
-          BUILD_PATH="Jellyfin.Plugin.BetterPlayer/BetterPlayerPlugin/bin/Release/net9.0"
+          BUILD_PATH="BetterPlayerPlugin/bin/Release/net9.0"
           cd "$BUILD_PATH"
 
           # ZIP 文件输出到仓库根目录
