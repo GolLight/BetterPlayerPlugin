@@ -1,0 +1,142 @@
+name: 🧩 Better Player 插件自动发布 (Release)
+
+# 仅在推送 Tag 时触发 (例如 v1.4.1.0)
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  # 允许手动在 Actions 页面触发
+  workflow_dispatch:
+
+env:
+  CS_PROJ_PATH: Jellyfin.Plugin.BetterPlayer/BetterPlayerPlugin/BetterPlayerPlugin.csproj
+  MANIFEST_PATH: manifest.json
+  PLUGIN_DLL: BetterPlayerPlugin.dll
+  ZIP_NAME: BetterPlayerPlugin.zip
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # 必须有写入权限才能提交 manifest 和创建 release
+
+    steps:
+      # 1. 环境准备
+      - name: ⬇️ 检出代码 (Checkout code)
+        uses: actions/checkout@v5.0.0
+        with:
+          # 必须拉取完整历史记录，fetch-depth 必须为 0
+          fetch-depth: 0
+
+      - name: ⚙️ 设置 .NET 9.0 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      # 2. 提取版本号和 Changelog
+      - name: 🔖 提取版本信息及 Changelog
+        id: get_version_info
+        run: |
+          # a. 提取当前版本 (V1.0.0.1 -> 1.0.0.1)
+          CURRENT_VERSION="${{ github.ref_name#v }}"
+          echo "PLUGIN_VERSION=$CURRENT_VERSION" >> $GITHUB_ENV
+
+          # b. 获取上一个 Tag
+          # git describe --tags --abbrev=0 获取最近的 Tag
+          # --skip=1 则跳过当前的 Tag，获取上一个 Tag
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 --skip=1 2>/dev/null)
+          
+          # c. 提取 Changelog
+          if [ -z "$PREVIOUS_TAG" ]; then
+            # 如果没有上一个 Tag，则获取所有 commits (例如第一次发布)
+            CHANGELOG=$(git log --pretty=format:"* %s" | sed ':a;N;$!ba;s/\n/\\n/g')
+            echo "未找到上一个 Tag，使用所有 Commit 消息作为 Changelog。"
+          else
+            # 从上一个 Tag 到当前 Tag 之间的 commits
+            CHANGELOG=$(git log "$PREVIOUS_TAG"..HEAD --pretty=format:"* %s" | sed ':a;N;$!ba;s/\n/\\n/g')
+            echo "Changelog 已从 $PREVIOUS_TAG 提取。"
+          fi
+          
+          # 将 CHANGELOG 结果存入环境变量 (需要将换行符转义)
+          echo "CHANGELOG<<EOF" >> $GITHUB_ENV
+          echo "$CHANGELOG" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      # 3. 更新 .csproj 版本
+      - name: 🆙 更新 .csproj 版本号
+        run: |
+          sudo apt-get update && sudo apt-get install -y xmlstarlet
+          VERSION_XPATH="/Project/PropertyGroup/Version"
+          xmlstarlet ed -P -L -u "$VERSION_XPATH" -v "${{ env.PLUGIN_VERSION }}" "${{ env.CS_PROJ_PATH }}"
+          echo "✅ .csproj 中的 <Version> 已更新为 ${{ env.PLUGIN_VERSION }}"
+
+      # 4. 构建项目
+      - name: 🏗️ 构建插件 (dotnet build)
+        run: dotnet build "${{ env.CS_PROJ_PATH }}" -c Release
+
+      # 5. 打包 ZIP 文件
+      - name: 📦 打包插件 ZIP
+        run: |
+          # 切换到构建输出目录
+          BUILD_PATH="Jellyfin.Plugin.BetterPlayer/BetterPlayerPlugin/bin/Release/net9.0"
+          cd "$BUILD_PATH"
+
+          # ZIP 文件输出到仓库根目录
+          ZIP_OUTPUT="${{ github.workspace }}/${{ env.ZIP_NAME }}"
+
+          # 使用 zip 命令，只打包核心 DLL 文件
+          # 注意：zip 的参数是相对路径，所以这里直接使用 DLL 文件名
+          zip "$ZIP_OUTPUT" ${{ env.PLUGIN_DLL }}
+
+          # 返回仓库根目录
+          cd - > /dev/null
+          
+          echo "ZIP 文件已创建: ${{ env.ZIP_NAME }}"
+
+      # 6. 更新 manifest.json 文件 - 核心修改部分
+      - name: 📝 更新 manifest.json (新增版本对象)
+        run: |
+          sudo apt-get install -y jq
+
+          # a. 计算大写 MD5 校验和
+          MD5_UPPER=$(md5sum "${{ env.ZIP_NAME }}" | awk '{print $1}' | tr '[:lower:]' '[:upper:]')
+          echo "Calculated MD5: $MD5_UPPER"
+          
+          # b. 获取当前 UTC 时间戳
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          
+          # c. 构建新的版本对象 (JSON 字符串)
+          NEW_VERSION_JSON="{
+            \"version\": \"${{ env.PLUGIN_VERSION }}\",
+            \"changelog\": \"${{ env.CHANGELOG }}\",
+            \"targetAbi\": \"10.11.0.0\",
+            \"sourceUrl\": \"https://github.com/GolLight/BetterPlayerPlugin/releases/download/v${{ env.PLUGIN_VERSION }}/${{ env.ZIP_NAME }}\",
+            \"checksum\": \"$MD5_UPPER\",
+            \"timestamp\": \"$TIMESTAMP\"
+          }"
+
+          # d. 使用 jq 将新对象添加到 versions 数组的开头 (prepend)
+          # 注意: 我们假设第一个插件 (.[0]) 是目标插件
+          jq --argjson new_version "$NEW_VERSION_JSON" \
+             '.[0].versions |= [ $new_version ] + .' ${{ env.MANIFEST_PATH }} > manifest_updated.json
+             
+          mv manifest_updated.json ${{ env.MANIFEST_PATH }}
+
+      # 7. 提交 manifest.json 和 .csproj
+      - name: 💾 提交更新后的文件
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add ${{ env.MANIFEST_PATH }}
+          git add ${{ env.CS_PROJ_PATH }}
+          git diff
+          git commit -m "chore(release): Update manifest and csproj for v${{ env.PLUGIN_VERSION }} release." || echo "No changes to commit."
+          git push
+
+      # 8. 创建 GitHub Release
+      - name: 🏷️ 创建 GitHub Release 并上传资产
+        uses: softprops/action-gh-release@v2.4.1
+        with:
+          name: Release ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          files: ${{ env.ZIP_NAME }}
