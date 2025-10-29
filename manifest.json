@@ -9,6 +9,14 @@
     "imageUrl": "https://raw.githubusercontent.com/GolLight/BetterPlayerPlugin/master/Images/logo.png",
     "versions": [
       {
+        "version": "1.1.0.0",
+        "changelog": "* Modify the settings UI\n* Add XML comments for explanations\n* fix  format\n* Fix compilation warnings\n* fix the issue of displaying errors related to dll versions\n* Merge chore(release) for v1.0.0.1 update.\n* chore(release): Update manifest and csproj for v1.0.0.1 release.\n* fix yml\n* v1.0.0.1\n* fix yml\n* Update main.yml\n* fix yml\n* fix yml\n* Update main.yml\n* Create main.yml\n* fix md 5\n* fix md5\n* fix version\n* update right md5\n* fix time\n* fix installError checksum is null\n* Update README.md\n* add logo image",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/GolLight/BetterPlayerPlugin/releases/download/v1.1.0.0/BetterPlayerPlugin.zip",
+        "checksum": "A0DCA682EAB5503C4BF9AAA627D5A9DE",
+        "timestamp": "2025-10-29T07:07:38Z"
+      },
+      {
         "version": "1.0.0.1",
         "changelog": "* fix yml\n* v1.0.0.1\n* fix yml\n* Update main.yml\n* fix yml\n* fix yml\n* Update main.yml\n* Create main.yml\n* fix md 5\n* fix md5\n* fix version\n* update right md5\n* fix time\n* fix installError checksum is null\n* Update README.md\n* add logo image",
         "targetAbi": "10.11.0.0",
