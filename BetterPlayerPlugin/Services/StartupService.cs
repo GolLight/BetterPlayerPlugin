@@ -16,7 +16,7 @@ namespace Jellyfin.Plugin.BetterPlayer.Services
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json.Linq;
 
-    public class StartupService(ILogger<Plugin> logger) : IScheduledTask
+    public class StartupService(ILogger<BetterPlayerPlugin> logger) : IScheduledTask
     {
         public string Name => "BetterPlayerPlugin Startup";
 

@@ -12,18 +12,21 @@ namespace Jellyfin.Plugin.BetterPlayer.Helpers
     using MediaBrowser.Common.Net;
     using Microsoft.Extensions.Logging;
 
-    public class PatchRequestPayload
-    {
-        public string? Contents { get; set; }
-    }
-
+    /// <summary>
+    /// 用于将客户端脚本注入 index.html 的实用工具类。.
+    /// </summary>
     public static class WebHtmlInjector
     {
-        private static ILogger<Plugin> Logger => Plugin.Instance!.Logger;
-
         private const string ScriptTagRegex = "<script plugin=\"BetterPlayerPlugin\".*?></script>";
         private const string ClientScriptRoute = "/BetterPlayerPlugin/better_player.js";
 
+        private static ILogger<BetterPlayerPlugin> Logger => BetterPlayerPlugin.Instance!.Logger;
+
+        /// <summary>
+        /// 通过 FileTransformation 插件注入客户端脚本。.
+        /// </summary>
+        /// <param name="payload">包含 index.html 内容的请求负载。.</param>
+        /// <returns>注入脚本后的 index.html 内容。.</returns>
         public static string FileTransformer(PatchRequestPayload payload)
         {
             Logger.LogDebug("[BP-DEBUG] Attempting to inject script by using FileTransformation plugin.");
@@ -42,7 +45,7 @@ namespace Jellyfin.Plugin.BetterPlayer.Helpers
             Logger.LogDebug("[BP-DEBUG] Attempting to inject script by changing index.html file directly.");
 
             // ✨ 修复 CS0122：改为使用 Plugin.cs 中新公开的 PublicApplicationPaths 属性
-            var applicationPaths = Plugin.Instance!.PublicApplicationPaths;
+            var applicationPaths = BetterPlayerPlugin.Instance!.PublicApplicationPaths;
 
             if (string.IsNullOrWhiteSpace(applicationPaths.WebPath))
             {
@@ -88,7 +91,7 @@ namespace Jellyfin.Plugin.BetterPlayer.Helpers
         private static string GetScriptElement()
         {
             NetworkConfiguration networkConfiguration =
-                Plugin.Instance!.ConfigurationManager.GetNetworkConfiguration();
+                BetterPlayerPlugin.Instance!.ConfigurationManager.GetNetworkConfiguration();
 
             string basePath = string.Empty;
             try
