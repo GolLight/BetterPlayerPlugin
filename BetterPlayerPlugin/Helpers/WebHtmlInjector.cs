@@ -40,6 +40,9 @@ namespace Jellyfin.Plugin.BetterPlayer.Helpers
             return regex;
         }
 
+        /// <summary>
+        /// 通过直接修改 index.html 文件注入客户端脚本。.
+        /// </summary>
         public static void Direct()
         {
             Logger.LogDebug("[BP-DEBUG] Attempting to inject script by changing index.html file directly.");

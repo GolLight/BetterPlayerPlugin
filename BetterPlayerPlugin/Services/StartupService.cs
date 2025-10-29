@@ -16,16 +16,39 @@ namespace Jellyfin.Plugin.BetterPlayer.Services
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json.Linq;
 
+    /// <summary>
+    /// Jellyfin 服务器启动时执行的计划任务服务。
+    /// 用于处理客户端脚本的注入逻辑，优先使用 FileTransformation 插件。.
+    /// </summary>
+    /// <param name="logger">日志记录器服务.</param>
     public class StartupService(ILogger<BetterPlayerPlugin> logger) : IScheduledTask
     {
+        /// <summary>
+        /// Gets 获取任务的名称。.
+        /// </summary>
         public string Name => "BetterPlayerPlugin Startup";
 
+        /// <summary>
+        /// Gets 获取任务的唯一标识键。.
+        /// </summary>
         public string Key => "BetterPlayerPlugin.Startup.b5eaeb4a-57d9-4703-9e63-2c2ad6a7fc67";
 
+        /// <summary>
+        /// Gets 获取任务的描述.
+        /// </summary>
         public string Description => "Handles FileTransformation registration for BetterPlayer.";
 
+        /// <summary>
+        /// Gets 获取任务所属的类别。.
+        /// </summary>
         public string Category => "Startup Services";
 
+        /// <summary>
+        /// 执行计划任务。在 Jellyfin 服务器启动或应用更新后执行。.
+        /// </summary>
+        /// <param name="progress">进度报告接口。.</param>
+        /// <param name="cancellationToken">取消令牌.</param>
+        /// <returns>表示异步操作的 <see cref="Task"/>。.</returns>.
         public Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
         {
             const string PluginGuid = "b5eaeb4a-57d9-4703-9e63-2c2ad6a7fc67";
@@ -74,6 +97,10 @@ namespace Jellyfin.Plugin.BetterPlayer.Services
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// 获取任务的默认触发器列表。.
+        /// </summary>
+        /// <returns>包含启动触发器信息的 <see cref="IEnumerable{TaskTriggerInfo}"/>。.</returns>.
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
         {
             yield return new TaskTriggerInfo()

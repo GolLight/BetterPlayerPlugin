@@ -7,24 +7,33 @@ namespace Jellyfin.Plugin.BetterPlayer.Api
     using System;
     using System.IO;
     using System.Reflection;
-    using Microsoft.AspNetCore.Http; // ✨ 新增：用于 FileResult 的 ContentType
-    using Microsoft.AspNetCore.Mvc; // ✨ 新增：用于 ControllerBase, HttpGet
+    using Microsoft.AspNetCore.Http;
+    using Microsoft.AspNetCore.Mvc;
     using Microsoft.Extensions.Logging;
 
-    // ✨ 继承 ControllerBase 并设置 [ApiController] 和 [Route]
+    /// <summary>
+    /// 提供 better_player.js 客户端脚本文件的 HTTP 访问接口。.
+    /// </summary>
     [ApiController]
     [Route("BetterPlayerPlugin")] // 路由基础路径 /BetterPlayerPlugin
     public class BetterPlayerJsController : ControllerBase
     {
         private readonly ILogger<BetterPlayerJsController> logger;
 
-        // 构造函数用于 DI 注入 ILogger
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BetterPlayerJsController"/> class.
+        /// 构造函数用于 DI 注入 <see cref="ILogger{TCategoryName}"/>。.
+        /// </summary>
+        /// <param name="logger">日志记录器服务。.</param>
         public BetterPlayerJsController(ILogger<BetterPlayerJsController> logger)
         {
             this.logger = logger;
         }
 
-        // ✨ HttpGet 方法，路由完整路径为 /BetterPlayerPlugin/better_player.js
+        /// <summary>
+        /// 获取客户端增强脚本 better_player.js 的内容。.
+        /// </summary>
+        /// <returns>一个文件结果，包含客户端脚本。.</returns>
         [HttpGet("better_player.js")]
         [Produces("application/javascript")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -37,7 +46,6 @@ namespace Jellyfin.Plugin.BetterPlayer.Api
                 var assembly = Assembly.GetExecutingAssembly();
                 const string resourceName = "Jellyfin.Plugin.BetterPlayer.Resources.better_player.js";
 
-                // 🌟 关键修改：移除 'using var'，改为普通的 'var'
                 var stream = assembly.GetManifestResourceStream(resourceName);
 
                 if (stream == null)
